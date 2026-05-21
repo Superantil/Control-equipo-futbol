@@ -2,52 +2,171 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Control de Peso</title>
-    <style>
-        body { font-family: sans-serif; background-color: #f4f4f4; margin: 20px; }
-        h1 { text-align: center; color: #333; }
-        .table-container { overflow-x: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
-        thead { background-color: #0366d6; color: #ffffff; }
-        tbody tr:nth-child(even) { background-color: #f2f2f2; }
-        .back-link { display: block; margin: 20px 0; text-align: center; color: #0366d6; text-decoration: none; font-weight: bold; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Peso - Control Equipo</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Control de Peso</h1>
-    <a href="index.html" class="back-link">← Volver al Menú Principal</a>
-    <div class="table-container">
-        <table border="1">
-          <thead>
-            <tr style="text-align: right;">
-              <th>NOMBRE</th>
-              <th>ENERO</th>
-              <th>FEBRERO</th>
-              <th>MARZO</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>DANIELA</td>
-              <td>60</td>
-              <td>61</td>
-              <td>60.5</td>
-            </tr>
-            <tr>
-              <td>DEBANHI</td>
-              <td>65</td>
-              <td>64</td>
-              <td>64.5</td>
-            </tr>
-            <tr>
-              <td>SOFIA</td>
-              <td>55</td>
-              <td>56</td>
-              <td>55.5</td>
-            </tr>
-          </tbody>
-        </table>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">⚽ Control Equipo</div>
+            <div class="nav-links">
+                <a href="index.html">Dashboard</a>
+                <a href="jugadoras.html">Jugadoras</a>
+                <a href="calendario.html">Calendario</a>
+                <a href="asistencia.html">Asistencia</a>
+                <a href="control_peso.html" class="active">Peso</a>
+                <a href="rpe.html">RPE</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Control de Peso</h1>
+            <p>Seguimiento de peso e IMC</p>
+        </div>
+
+        <div class="section-card" style="margin-bottom: 2rem;">
+            <button class="btn btn-primary" onclick="abrirModalAgregar()">➕ Registrar Peso</button>
+        </div>
+
+        <div id="registrosPeso"></div>
     </div>
+
+    <!-- Modal -->
+    <div id="modalPeso" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Peso</h2>
+                <button class="close-btn" onclick="cerrarModal('modalPeso')">×</button>
+            </div>
+            <form id="formPeso" onsubmit="guardarPeso(event)">
+                <div class="form-group">
+                    <label>Jugadora *</label>
+                    <select id="jugadora" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Peso (kg) *</label>
+                    <input type="number" id="peso" min="30" max="150" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Altura (cm)</label>
+                    <input type="number" id="altura" min="100" max="220">
+                </div>
+                <div class="form-group">
+                    <label>Fecha *</label>
+                    <input type="date" id="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea id="observaciones" placeholder="Notas adicionales..."></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">💾 Guardar</button>
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="cerrarModal('modalPeso')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function cargarRegistros() {
+            const registros = AppData.obtenerPeso();
+            const jugadoras = AppData.obtenerJugadoras();
+            const contenedor = document.getElementById('registrosPeso');
+
+            if (registros.length === 0) {
+                contenedor.innerHTML = '<p class="empty-state">No hay registros de peso</p>';
+                return;
+            }
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Jugadora</th>
+                            <th>Peso</th>
+                            <th>Altura</th>
+                            <th>IMC</th>
+                            <th>Fecha</th>
+                            <th>Observaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${registros.map(r => {
+                            const jugadora = jugadoras.find(j => j.id == r.jugadoraId);
+                            const imcClass = r.imc < 18.5 ? 'text-danger' : r.imc > 25 ? 'text-danger' : 'text-success';
+                            return `
+                                <tr>
+                                    <td>${jugadora?.nombre || 'Desconocida'}</td>
+                                    <td>${r.peso} kg</td>
+                                    <td>${r.altura ? r.altura + ' cm' : '-'}</td>
+                                    <td><span class="${imcClass}">${r.imc || '-'}</span></td>
+                                    <td>${formatearFecha(r.fecha)}</td>
+                                    <td>${r.observaciones || '-'}</td>
+                                    <td>
+                                        <button class="btn btn-danger" onclick="eliminarRegistro(${r.id})">🗑️</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+            contenedor.innerHTML = html;
+        }
+
+        function cargarJugadorasSelect() {
+            const jugadoras = AppData.obtenerJugadoras();
+            const select = document.getElementById('jugadora');
+            select.innerHTML = '<option value="">Seleccionar...</option>' + 
+                jugadoras.map(j => `<option value="${j.id}">${j.nombre}</option>`).join('');
+        }
+
+        function abrirModalAgregar() {
+            document.getElementById('formPeso').reset();
+            document.getElementById('fecha').valueAsDate = new Date();
+            cargarJugadorasSelect();
+            abrirModal('modalPeso');
+        }
+
+        function guardarPeso(event) {
+            event.preventDefault();
+            
+            const registro = {
+                jugadoraId: parseInt(document.getElementById('jugadora').value),
+                peso: parseFloat(document.getElementById('peso').value),
+                altura: document.getElementById('altura').value ? parseInt(document.getElementById('altura').value) : null,
+                fecha: document.getElementById('fecha').value,
+                observaciones: document.getElementById('observaciones').value
+            };
+
+            if (registro.peso && registro.jugadoraId) {
+                AppData.agregarPeso(registro);
+                alert('✅ Registro guardado');
+                cerrarModal('modalPeso');
+                cargarRegistros();
+            }
+        }
+
+        function eliminarRegistro(id) {
+            if (confirm('¿Eliminar este registro?')) {
+                const datos = AppData.obtenerDatos();
+                datos.peso = datos.peso.filter(r => r.id != id);
+                AppData.guardarDatos(datos);
+                alert('✅ Eliminado');
+                cargarRegistros();
+            }
+        }
+
+        // Cargar al iniciar
+        cargarRegistros();
+        cargarJugadorasSelect();
+    </script>
 </body>
 </html>

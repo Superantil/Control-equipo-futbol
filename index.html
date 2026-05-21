@@ -3,32 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control del Equipo de Fútbol</title>
-    <style>
-        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1, h2 { color: #0366d6; }
-        ul { list-style-type: none; padding: 0; }
-        li { background: #e8f0fe; margin-bottom: 10px; padding: 15px; border-radius: 5px; }
-        a { text-decoration: none; color: #0366d6; font-weight: bold; }
-        a:hover { text-decoration: underline; }
-    </style>
+    <title>Control Equipo Fútbol - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">⚽ Control Equipo</div>
+            <div class="nav-links">
+                <a href="index.html" class="active">Dashboard</a>
+                <a href="jugadoras.html">Jugadoras</a>
+                <a href="calendario.html">Calendario</a>
+                <a href="asistencia.html">Asistencia</a>
+                <a href="control_peso.html">Peso</a>
+                <a href="rpe.html">RPE</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
-        <h1>Control del Equipo de Fútbol</h1>
-        <h2>Menú Principal</h2>
-        <p>Selecciona una sección para ver los detalles:</p>
-        <ul>
-            <li><a href="portada.html">Portada</a></li>
-            <li><a href="jugadoras.html">Control de Jugadoras</a></li>
-            <li><a href="calendario.html">Calendario de Partidos</a></li>
-            <li><a href="asistencia.html">Control de Asistencia</a></li>
-            <li><a href="control_peso.html">Control de Peso</a></li>
-            <li><a href="rpe.html">Control de RPE (Esfuerzo Percibido)</a></li>
-            <li><a href="modelo_hoja_jugador.html">Modelo de Hoja por Jugador</a></li>
-            <li><a href="modelo_rpe_semanal.html">Modelo de RPE Semanal</a></li>
-        </ul>
+        <div class="dashboard-header">
+            <h1>Dashboard - Control de Equipo</h1>
+            <p>Gestión integral del equipo de fútbol</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <h3>Jugadoras</h3>
+                    <p class="stat-number" id="totalJugadoras">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <h3>Próximos Eventos</h3>
+                    <p class="stat-number" id="proximosEventos">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <h3>Asistencia Promedio</h3>
+                    <p class="stat-number" id="asistenciaPromedio">0%</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚖️</div>
+                <div class="stat-content">
+                    <h3>Registros de Peso</h3>
+                    <p class="stat-number" id="totalPeso">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="section-card">
+                <h2>⚙️ Configuración de Datos</h2>
+                <p>Gestiona tu información y datos de respaldo</p>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="descargarDatos()">📥 Descargar Datos</button>
+                    <button class="btn btn-secondary" onclick="cargarDatos()">📤 Cargar Datos</button>
+                    <button class="btn btn-danger" onclick="limpiarDatos()">🗑️ Limpiar Todo</button>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h2>📊 Información Rápida</h2>
+                <ul class="quick-info">
+                    <li>✅ Los datos se guardan automáticamente</li>
+                    <li>📱 Funciona en cualquier dispositivo</li>
+                    <li>💾 Almacenamiento local (sin servidor)</li>
+                    <li>🔒 Privacidad garantizada</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="recent-activity">
+            <h2>Actividad Reciente</h2>
+            <div id="activityLog" class="activity-log">
+                <p class="empty-state">No hay actividad reciente</p>
+            </div>
+        </div>
     </div>
+
+    <input type="file" id="fileInput" style="display: none;" accept=".json">
+
+    <script src="app.js"></script>
+    <script>
+        function cargarDatos() {
+            document.getElementById('fileInput').click();
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const datos = JSON.parse(event.target.result);
+                        localStorage.setItem('appData', JSON.stringify(datos));
+                        alert('✅ Datos importados correctamente');
+                        location.reload();
+                    } catch (error) {
+                        alert('❌ Error al cargar el archivo');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function descargarDatos() {
+            const datos = localStorage.getItem('appData') || {};
+            const dataStr = typeof datos === 'string' ? datos : JSON.stringify(datos);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        function limpiarDatos() {
+            if (confirm('⚠️ ¿Estás seguro? Se eliminarán TODOS los datos')) {
+                localStorage.clear();
+                alert('✅ Datos eliminados');
+                location.reload();
+            }
+        }
+
+        // Cargar estadísticas
+        function cargarEstadisticas() {
+            const data = AppData.obtenerDatos();
+            document.getElementById('totalJugadoras').textContent = data.jugadoras?.length || 0;
+            document.getElementById('proximosEventos').textContent = data.calendario?.filter(e => new Date(e.fecha) >= new Date()).length || 0;
+            document.getElementById('totalPeso').textContent = data.peso?.length || 0;
+            
+            // Asistencia promedio
+            if (data.asistencia && data.asistencia.length > 0) {
+                const promedio = Math.round((data.asistencia.filter(a => a.presente).length / data.asistencia.length) * 100);
+                document.getElementById('asistenciaPromedio').textContent = promedio + '%';
+            }
+        }
+
+        cargarEstadisticas();
+    </script>
 </body>
 </html>

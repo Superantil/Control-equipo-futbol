@@ -2,60 +2,224 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Control de RPE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPE - Control Equipo</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f4; margin: 20px; }
-        h1 { text-align: center; color: #333; }
-        .table-container { overflow-x: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
-        thead { background-color: #0366d6; color: #ffffff; }
-        tbody tr:nth-child(even) { background-color: #f2f2f2; }
-        .back-link { display: block; margin: 20px 0; text-align: center; color: #0366d6; text-decoration: none; font-weight: bold; }
+        .rpe-scale {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+        .rpe-btn {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .rpe-btn:hover {
+            border-color: #667eea;
+            transform: scale(1.1);
+        }
+        .rpe-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
     </style>
 </head>
 <body>
-    <h1>Control de RPE (Esfuerzo Percibido)</h1>
-    <a href="index.html" class="back-link">← Volver al Menú Principal</a>
-    <div class="table-container">
-        <table border="1">
-          <thead>
-            <tr style="text-align: right;">
-              <th>NOMBRE</th>
-              <th>LUNES</th>
-              <th>MARTES</th>
-              <th>MIERCOLES</th>
-              <th>JUEVES</th>
-              <th>VIERNES</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>DANIELA</td>
-              <td>8</td>
-              <td>7</td>
-              <td>9</td>
-              <td>8</td>
-              <td>7</td>
-            </tr>
-            <tr>
-              <td>DEBANHI</td>
-              <td>7</td>
-              <td>8</td>
-              <td>8</td>
-              <td>9</td>
-              <td>7</td>
-            </tr>
-            <tr>
-              <td>SOFIA</td>
-              <td>9</td>
-              <td>8</td>
-              <td>9</td>
-              <td>8</td>
-              <td>8</td>
-            </tr>
-          </tbody>
-        </table>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">⚽ Control Equipo</div>
+            <div class="nav-links">
+                <a href="index.html">Dashboard</a>
+                <a href="jugadoras.html">Jugadoras</a>
+                <a href="calendario.html">Calendario</a>
+                <a href="asistencia.html">Asistencia</a>
+                <a href="control_peso.html">Peso</a>
+                <a href="rpe.html" class="active">RPE</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Control de RPE</h1>
+            <p>Escala de Esfuerzo Percibido (1-10)</p>
+        </div>
+
+        <div class="section-card" style="margin-bottom: 2rem;">
+            <button class="btn btn-primary" onclick="abrirModalAgregar()">➕ Registrar RPE</button>
+        </div>
+
+        <div id="registrosRPE"></div>
     </div>
+
+    <!-- Modal -->
+    <div id="modalRPE" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar RPE</h2>
+                <button class="close-btn" onclick="cerrarModal('modalRPE')">×</button>
+            </div>
+            <form id="formRPE" onsubmit="guardarRPE(event)">
+                <div class="form-group">
+                    <label>Jugadora *</label>
+                    <select id="jugadora" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha *</label>
+                    <input type="date" id="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Actividad *</label>
+                    <select id="actividad" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="Entrenamiento">🏋️ Entrenamiento</option>
+                        <option value="Partido">⚽ Partido</option>
+                        <option value="Recuperación">🧘 Recuperación</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Escala de Esfuerzo (1-10) *</label>
+                    <div class="rpe-scale" id="escalaRPE"></div>
+                    <input type="hidden" id="rpeValor" required>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea id="observaciones" placeholder="Como se sintió..."></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">💾 Guardar</button>
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="cerrarModal('modalRPE')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function crearEscalaRPE() {
+            const escala = document.getElementById('escalaRPE');
+            let html = '';
+            for (let i = 1; i <= 10; i++) {
+                html += `<button type="button" class="rpe-btn" onclick="seleccionarRPE(${i})">${i}</button>`;
+            }
+            escala.innerHTML = html;
+        }
+
+        function seleccionarRPE(valor) {
+            document.getElementById('rpeValor').value = valor;
+            document.querySelectorAll('.rpe-btn').forEach((btn, index) => {
+                if (index + 1 <= valor) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function cargarRegistros() {
+            const registros = AppData.obtenerRPE();
+            const jugadoras = AppData.obtenerJugadoras();
+            const contenedor = document.getElementById('registrosRPE');
+
+            if (registros.length === 0) {
+                contenedor.innerHTML = '<p class="empty-state">No hay registros de RPE</p>';
+                return;
+            }
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Jugadora</th>
+                            <th>Fecha</th>
+                            <th>Actividad</th>
+                            <th>RPE</th>
+                            <th>Observaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${registros.map(r => {
+                            const jugadora = jugadoras.find(j => j.id == r.jugadoraId);
+                            const iconoActividad = r.actividad === 'Partido' ? '⚽' : r.actividad === 'Entrenamiento' ? '🏋️' : '🧘';
+                            return `
+                                <tr>
+                                    <td>${jugadora?.nombre || 'Desconocida'}</td>
+                                    <td>${formatearFecha(r.fecha)}</td>
+                                    <td>${iconoActividad} ${r.actividad}</td>
+                                    <td><strong>${r.rpe}/10</strong></td>
+                                    <td>${r.observaciones || '-'}</td>
+                                    <td>
+                                        <button class="btn btn-danger" onclick="eliminarRegistro(${r.id})">🗑️</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+            contenedor.innerHTML = html;
+        }
+
+        function cargarJugadorasSelect() {
+            const jugadoras = AppData.obtenerJugadoras();
+            const select = document.getElementById('jugadora');
+            select.innerHTML = '<option value="">Seleccionar...</option>' + 
+                jugadoras.map(j => `<option value="${j.id}">${j.nombre}</option>`).join('');
+        }
+
+        function abrirModalAgregar() {
+            document.getElementById('formRPE').reset();
+            document.getElementById('fecha').valueAsDate = new Date();
+            document.getElementById('rpeValor').value = '';
+            crearEscalaRPE();
+            cargarJugadorasSelect();
+            abrirModal('modalRPE');
+        }
+
+        function guardarRPE(event) {
+            event.preventDefault();
+            
+            const rpe = {
+                jugadoraId: parseInt(document.getElementById('jugadora').value),
+                fecha: document.getElementById('fecha').value,
+                actividad: document.getElementById('actividad').value,
+                rpe: parseInt(document.getElementById('rpeValor').value),
+                observaciones: document.getElementById('observaciones').value
+            };
+
+            if (rpe.rpe && rpe.jugadoraId) {
+                AppData.agregarRPE(rpe);
+                alert('✅ Registro guardado');
+                cerrarModal('modalRPE');
+                cargarRegistros();
+            }
+        }
+
+        function eliminarRegistro(id) {
+            if (confirm('¿Eliminar este registro?')) {
+                const datos = AppData.obtenerDatos();
+                datos.rpe = datos.rpe.filter(r => r.id != id);
+                AppData.guardarDatos(datos);
+                alert('✅ Eliminado');
+                cargarRegistros();
+            }
+        }
+
+        // Cargar al iniciar
+        cargarRegistros();
+        cargarJugadorasSelect();
+        crearEscalaRPE();
+    </script>
 </body>
 </html>
