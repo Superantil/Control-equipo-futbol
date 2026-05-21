@@ -2,55 +2,151 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Calendario</title>
-    <style>
-        body { font-family: sans-serif; background-color: #f4f4f4; margin: 20px; }
-        h1 { text-align: center; color: #333; }
-        .table-container { overflow-x: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
-        thead { background-color: #0366d6; color: #ffffff; }
-        tbody tr:nth-child(even) { background-color: #f2f2f2; }
-        .back-link { display: block; margin: 20px 0; text-align: center; color: #0366d6; text-decoration: none; font-weight: bold; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario - Control Equipo</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Calendario de Partidos</h1>
-    <a href="index.html" class="back-link">← Volver al Menú Principal</a>
-    <div class="table-container">
-        <table border="1">
-<thead>
-  <tr style="text-align: right;">
-    <th>JORNADA</th>
-    <th>FECHA</th>
-    <th>LOCAL</th>
-    <th>VISITANTE</th>
-    <th>CAMPO</th>
-    <th>HORA</th>
-    <th>Unnamed: 6</th>
-  </tr>
-</thead>
-<tbody>
-  <tr>
-    <td>1</td>
-    <td>17/01/25</td>
-    <td>TIGRES</td>
-    <td>MONTERREY</td>
-    <td>ZUASUA</td>
-    <td>4:30 PM</td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>2</td>
-    <td>24/01/25</td>
-    <td>MONTERREY</td>
-    <td>JUAREZ</td>
-    <td>BBVA</td>
-    <td>7:00 PM</td>
-    <td></td>
-  </tr>
-</tbody>
-</table>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">⚽ Control Equipo</div>
+            <div class="nav-links">
+                <a href="index.html">Dashboard</a>
+                <a href="jugadoras.html">Jugadoras</a>
+                <a href="calendario.html" class="active">Calendario</a>
+                <a href="asistencia.html">Asistencia</a>
+                <a href="control_peso.html">Peso</a>
+                <a href="rpe.html">RPE</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Calendario de Eventos</h1>
+            <p>Gestiona partidos y entrenamientos</p>
+        </div>
+
+        <div class="section-card" style="margin-bottom: 2rem;">
+            <button class="btn btn-primary" onclick="abrirModalAgregarEvento()">📅 Nuevo Evento</button>
+        </div>
+
+        <div style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));" id="listaEventos"></div>
     </div>
+
+    <!-- Modal para agregar/editar -->
+    <div id="modalEvento" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuevo Evento</h2>
+                <button class="close-btn" onclick="cerrarModal('modalEvento')">×</button>
+            </div>
+            <form id="formEvento" onsubmit="guardarEvento(event)">
+                <div class="form-group">
+                    <label>Tipo de Evento *</label>
+                    <select id="tipo" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="Partido">⚽ Partido</option>
+                        <option value="Entrenamiento">🏋️ Entrenamiento</option>
+                        <option value="Reunión">📋 Reunión</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha *</label>
+                    <input type="date" id="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label>Hora *</label>
+                    <input type="time" id="hora" required>
+                </div>
+                <div class="form-group">
+                    <label>Lugar</label>
+                    <input type="text" id="lugar" placeholder="Ej: Cancha Principal">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="descripcion" placeholder="Detalles adicionales..."></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">💾 Guardar</button>
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="cerrarModal('modalEvento')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function cargarEventos() {
+            const eventos = AppData.obtenerEventos();
+            const contenedor = document.getElementById('listaEventos');
+
+            if (eventos.length === 0) {
+                contenedor.innerHTML = '<p class="empty-state" style="grid-column: 1 / -1;">No hay eventos programados</p>';
+                return;
+            }
+
+            contenedor.innerHTML = eventos.map(e => {
+                const fecha = new Date(e.fecha);
+                const esProximo = fecha >= new Date(new Date().toISOString().split('T')[0]);
+                const iconoTipo = e.tipo === 'Partido' ? '⚽' : e.tipo === 'Entrenamiento' ? '🏋️' : '📋';
+                
+                return `
+                    <div class="card" style="border-left: 4px solid ${e.tipo === 'Partido' ? '#d32f2f' : e.tipo === 'Entrenamiento' ? '#388e3c' : '#1976d2'};">
+                        <div class="card-header">
+                            <div>
+                                <h3>${iconoTipo} ${e.tipo}</h3>
+                                <p class="text-muted">${formatearFecha(e.fecha)} a las ${e.hora}</p>
+                            </div>
+                            ${esProximo ? '<span class="card-badge badge-primary">Próximo</span>' : '<span class="card-badge badge-danger">Pasado</span>'}
+                        </div>
+                        <div style="padding-top: 1rem; border-top: 1px solid #f0f0f0;">
+                            ${e.lugar ? `<p><strong>📍 Lugar:</strong> ${e.lugar}</p>` : ''}
+                            ${e.descripcion ? `<p><strong>📝 Descripción:</strong> ${e.descripcion}</p>` : ''}
+                        </div>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <button class="btn btn-danger" style="flex: 1;" onclick="confirmarEliminarEvento(${e.id})">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function abrirModalAgregarEvento() {
+            document.getElementById('formEvento').reset();
+            document.getElementById('fecha').valueAsDate = new Date();
+            abrirModal('modalEvento');
+        }
+
+        function guardarEvento(event) {
+            event.preventDefault();
+            
+            const evento = {
+                tipo: document.getElementById('tipo').value,
+                fecha: document.getElementById('fecha').value,
+                hora: document.getElementById('hora').value,
+                lugar: document.getElementById('lugar').value,
+                descripcion: document.getElementById('descripcion').value
+            };
+
+            if (evento.tipo) {
+                AppData.agregarEvento(evento);
+                alert('✅ Evento agregado');
+                cerrarModal('modalEvento');
+                cargarEventos();
+            }
+        }
+
+        function confirmarEliminarEvento(id) {
+            if (confirm('¿Eliminar este evento?')) {
+                AppData.eliminarEvento(id);
+                alert('✅ Evento eliminado');
+                cargarEventos();
+            }
+        }
+
+        // Cargar al iniciar
+        cargarEventos();
+    </script>
 </body>
 </html>

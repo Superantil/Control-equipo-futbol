@@ -2,52 +2,211 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Control de Jugadoras</title>
-    <style>
-        body { font-family: sans-serif; background-color: #f4f4f4; margin: 20px; }
-        h1 { text-align: center; color: #333; }
-        .table-container { overflow-x: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
-        thead { background-color: #0366d6; color: #ffffff; }
-        tbody tr:nth-child(even) { background-color: #f2f2f2; }
-        .back-link { display: block; margin: 20px 0; text-align: center; color: #0366d6; text-decoration: none; font-weight: bold; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jugadoras - Control Equipo</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Control de Jugadoras</h1>
-    <a href="index.html" class="back-link">← Volver al Menú Principal</a>
-    <div class="table-container">
-        <table border="1">
-          <thead>
-            <tr style="text-align: right;">
-              <th>NOMBRE</th>
-              <th>NUMERO</th>
-              <th>POSICION</th>
-              <th>FECHA DE NACIMIENTO</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>DANIELA</td>
-              <td>1</td>
-              <td>PORTERA</td>
-              <td>1-Nov</td>
-            </tr>
-            <tr>
-              <td>DEBANHI</td>
-              <td>2</td>
-              <td>DEFENSA</td>
-              <td>1-Dec</td>
-            </tr>
-            <tr>
-              <td>SOFIA</td>
-              <td>3</td>
-              <td>DEFENSA</td>
-              <td>1-Mar</td>
-            </tr>
-          </tbody>
-        </table>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">⚽ Control Equipo</div>
+            <div class="nav-links">
+                <a href="index.html">Dashboard</a>
+                <a href="jugadoras.html" class="active">Jugadoras</a>
+                <a href="calendario.html">Calendario</a>
+                <a href="asistencia.html">Asistencia</a>
+                <a href="control_peso.html">Peso</a>
+                <a href="rpe.html">RPE</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Gestión de Jugadoras</h1>
+            <p>Administra la información de tu equipo</p>
+        </div>
+
+        <div class="section-card" style="margin-bottom: 2rem;">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <input type="text" id="buscar" placeholder="Buscar por nombre o número..." 
+                    style="flex: 1; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 6px;">
+                <button class="btn btn-primary" onclick="abrirModalAgregarJugadora()">➕ Agregar Jugadora</button>
+                <button class="btn btn-secondary" onclick="exportarJugadorasCSV()">📊 Exportar CSV</button>
+            </div>
+        </div>
+
+        <div id="listaJugadoras"></div>
     </div>
+
+    <!-- Modal para agregar/editar -->
+    <div id="modalJugadora" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitulo">Nueva Jugadora</h2>
+                <button class="close-btn" onclick="cerrarModal('modalJugadora')">×</button>
+            </div>
+            <form id="formJugadora" onsubmit="guardarJugadora(event)">
+                <div class="form-group">
+                    <label>Nombre *</label>
+                    <input type="text" id="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label>Número de Camiseta</label>
+                    <input type="number" id="numero" min="1" max="99">
+                </div>
+                <div class="form-group">
+                    <label>Posición</label>
+                    <select id="posicion">
+                        <option value="">Seleccionar...</option>
+                        <option value="Portero">Portero</option>
+                        <option value="Defensa">Defensa</option>
+                        <option value="Centrocampista">Centrocampista</option>
+                        <option value="Delantero">Delantero</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Altura (cm)</label>
+                    <input type="number" id="altura" min="100" max="220">
+                </div>
+                <div class="form-group">
+                    <label>Peso (kg)</label>
+                    <input type="number" id="peso" min="30" max="150" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email">
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">💾 Guardar</button>
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="cerrarModal('modalJugadora')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let jugadoraEnEdicion = null;
+
+        function cargarJugadoras() {
+            const jugadoras = AppData.obtenerJugadoras();
+            const contenedor = document.getElementById('listaJugadoras');
+
+            if (jugadoras.length === 0) {
+                contenedor.innerHTML = '<p class="empty-state">No hay jugadoras registradas. ¡Agrega una para comenzar!</p>';
+                return;
+            }
+
+            contenedor.innerHTML = jugadoras.map(j => `
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>${j.nombre}</h3>
+                            <p class="text-muted">Número: ${j.numero || '-'} | ${j.posicion || 'Sin posición'}</p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-secondary" onclick="editarJugadora(${j.id})">✏️ Editar</button>
+                            <button class="btn btn-danger" onclick="confirmarEliminar(${j.id}, '${j.nombre}')">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                        ${j.altura ? `<div><span class="text-muted">Altura</span><p style="font-size: 1.2rem; font-weight: bold;">${j.altura} cm</p></div>` : ''}
+                        ${j.peso ? `<div><span class="text-muted">Peso</span><p style="font-size: 1.2rem; font-weight: bold;">${j.peso} kg</p></div>` : ''}
+                        ${j.email ? `<div><span class="text-muted">Email</span><p>${j.email}</p></div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function abrirModalAgregarJugadora() {
+            jugadoraEnEdicion = null;
+            document.getElementById('modalTitulo').textContent = 'Nueva Jugadora';
+            document.getElementById('formJugadora').reset();
+            abrirModal('modalJugadora');
+        }
+
+        function editarJugadora(id) {
+            const jugadoras = AppData.obtenerJugadoras();
+            jugadoraEnEdicion = jugadoras.find(j => j.id == id);
+            
+            if (jugadoraEnEdicion) {
+                document.getElementById('modalTitulo').textContent = 'Editar Jugadora';
+                document.getElementById('nombre').value = jugadoraEnEdicion.nombre;
+                document.getElementById('numero').value = jugadoraEnEdicion.numero || '';
+                document.getElementById('posicion').value = jugadoraEnEdicion.posicion || '';
+                document.getElementById('altura').value = jugadoraEnEdicion.altura || '';
+                document.getElementById('peso').value = jugadoraEnEdicion.peso || '';
+                document.getElementById('email').value = jugadoraEnEdicion.email || '';
+                abrirModal('modalJugadora');
+            }
+        }
+
+        function guardarJugadora(event) {
+            event.preventDefault();
+            
+            const jugadora = {
+                nombre: document.getElementById('nombre').value,
+                numero: document.getElementById('numero').value ? parseInt(document.getElementById('numero').value) : null,
+                posicion: document.getElementById('posicion').value,
+                altura: document.getElementById('altura').value ? parseInt(document.getElementById('altura').value) : null,
+                peso: document.getElementById('peso').value ? parseFloat(document.getElementById('peso').value) : null,
+                email: document.getElementById('email').value
+            };
+
+            if (jugadoraEnEdicion) {
+                AppData.actualizarJugadora(jugadoraEnEdicion.id, jugadora);
+                alert('✅ Jugadora actualizada');
+            } else {
+                AppData.agregarJugadora(jugadora);
+                alert('✅ Jugadora agregada');
+            }
+
+            cerrarModal('modalJugadora');
+            cargarJugadoras();
+        }
+
+        function confirmarEliminar(id, nombre) {
+            if (confirm(`¿Eliminar a ${nombre}?`)) {
+                AppData.eliminarJugadora(id);
+                alert('✅ Jugadora eliminada');
+                cargarJugadoras();
+            }
+        }
+
+        function exportarJugadorasCSV() {
+            const jugadoras = AppData.obtenerJugadoras();
+            exportarCSV(jugadoras, 'jugadoras');
+        }
+
+        // Búsqueda en tiempo real
+        document.getElementById('buscar').addEventListener('input', (e) => {
+            const resultados = AppData.buscarJugadora(e.target.value);
+            const contenedor = document.getElementById('listaJugadoras');
+            
+            if (resultados.length === 0) {
+                contenedor.innerHTML = '<p class="empty-state">No se encontraron resultados</p>';
+                return;
+            }
+
+            contenedor.innerHTML = resultados.map(j => `
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>${j.nombre}</h3>
+                            <p class="text-muted">Número: ${j.numero || '-'} | ${j.posicion || 'Sin posición'}</p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-secondary" onclick="editarJugadora(${j.id})">✏️ Editar</button>
+                            <button class="btn btn-danger" onclick="confirmarEliminar(${j.id}, '${j.nombre}')">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        });
+
+        // Cargar al iniciar
+        cargarJugadoras();
+    </script>
 </body>
 </html>
